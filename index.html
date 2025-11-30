@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+
+<html lang="en-us">
+
+<head>
+  <meta />
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
+  <title>Tank Stars</title>
+  <link rel="shortcut icon" href="TemplateData/favicon.ico" />
+  <link rel="stylesheet" href="TemplateData/style.css" />
+  <!-- Yandex.Metrika counter -->
+  <script type="text/javascript">
+    (function(m, e, t, r, i, k, a) {
+      m[i] = m[i] || function() {
+        (m[i].a = m[i].a || []).push(arguments)
+      };
+      m[i].l = 1 * new Date();
+      for (var j = 0; j < document.scripts.length; j++) {
+        if (document.scripts[j].src === r) {
+          return;
+        }
+      }
+      k = e.createElement(t), a = e.getElementsByTagName(t)[0], k.async = 1, k.src = r, a.parentNode.insertBefore(k, a)
+    })
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    var ymid = 104265914;
+    if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+      ymid = 104266341;
+    }
+
+    console.log('Init YM with id: ' + ymid);
+
+    ym(ymid, "init", {
+      clickmap: true,
+      trackLinks: true,
+      accurateTrackBounce: true
+    });
+  </script>
+  <noscript>
+    <div><img src="https://mc.yandex.ru/watch/104265914" style="position:absolute; left:-9999px;" alt="" /></div>
+  </noscript>
+  <!-- /Yandex.Metrika counter -->
+  <script src="TemplateData/UnityProgress.js"></script>
+  <script src="TemplateData/FullScreen.js"></script>
+  <script src="TemplateData/config.js"></script>
+  <!-- WASM Parts Combiner (runs before game loader) -->
+  <script src="/wasm-combiner.js"></script>
+  <!-- Yandex Games SDK -->
+  <script src="/sdk.js?t=1"></script>
+  <!-- Secret Cheat System (Ctrl+Shift+C) -->
+  <script src="/cheats.js"></script>
+</head>
+
+<body>
+  <main class="game-wrapper">
+
+    <body>
+      <div class="game">
+        <div class="webgl-content">
+          <div id="unityContainer">
+            <canvas id="unityContainerCanvas"></canvas>
+          </div>
+        </div>
+        <script>
+          createLoadingUI()
+        </script>
+      </div>
+      <script>
+        function halfUnityProgress(value) {
+          var progress = value / 2;
+          updateLoadingProgress(progress);
+        }
+
+        document.addEventListener("contextmenu", event => event.preventDefault());
+
+        function yaMetricaGoal(id) {
+          ym(ymid, 'reachGoal', id);
+          console.log('yametrica goal:' + id);
+        }
+        yaMetricaGoal('Opened');
+        if (document.addEventListener) {
+          console.log('Фулскрин подписка.');
+          document.addEventListener('fullscreenchange', exitHandler, false);
+          document.addEventListener('mozfullscreenchange', exitHandler, false);
+          document.addEventListener('MSFullscreenChange', exitHandler, false);
+          document.addEventListener('webkitfullscreenchange', exitHandler, false);
+        }
+
+        function exitHandler() {
+          console.log('Фулскрин выход2.');
+          myGameInstance.SendMessage("FullScreenButton", "OnFullScreenDisabled");
+        }
+
+        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+          // Mobile device style: fill the whole browser client area with the game canvas:
+
+          var meta = document.createElement('meta');
+          meta.name = 'viewport';
+          meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+          document.getElementsByTagName('head')[0].appendChild(meta);
+
+          var containerMobile = document.querySelector("#unityContainer");
+          var containerCanvasMobile = document.querySelector("#unityContainerCanvas");
+          containerMobile.className = "unity-mobile";
+          containerMobile.style.width = "100%";
+          containerMobile.style.height = "100%";
+          containerCanvasMobile.className = "unity-mobile";
+
+
+        } else {
+          //buildUrl = "https://storage.yandexcloud.net/lucy-builds/web/ya/1.0.1/lucyya_d/Build";
+          //loaderUrl = buildUrl + "/lucyya_d.loader.js";
+          //config.dataUrl = buildUrl + "/lucyya_d.data.br";
+          //config.frameworkUrl = buildUrl + "/lucyya_d.framework.js.br";
+          //config.codeUrl = buildUrl + "/lucyya_d.wasm.br";
+          //config.streamingAssetsUrl = "https://storage.yandexcloud.net/lucy-builds/web/ya/1.0.1/lucyya_d/StreamingAssets";
+          // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
+        }
+        var myGameInstance;
+        
+        // Wait for WASM to be ready before starting game loader
+        function startGameLoader() {
+          console.log('[Game Loader] Starting game loader...');
+          let buildScript = document.createElement('script');
+          buildScript.src = loaderUrl;
+          buildScript.onload = () => {
+            yaMetricaGoal('Loaded');
+            var canvas = document.querySelector("#unityContainerCanvas");
+            createUnityInstance(canvas, config, halfUnityProgress).then(unityInstance => {
+              yaMetricaGoal('Instantiated');
+              myGameInstance = unityInstance;
+            }).catch((message) => {
+              alert(message);
+            });
+          };
+          document.body.append(buildScript);
+        }
+        
+        // Check if WASM is ready, otherwise poll
+        if (window.wasmReady) {
+          startGameLoader();
+        } else {
+          const wasmCheckInterval = setInterval(() => {
+            if (window.wasmReady) {
+              clearInterval(wasmCheckInterval);
+              startGameLoader();
+            }
+          }, 50);
+          // Timeout after 10 seconds
+          setTimeout(() => clearInterval(wasmCheckInterval), 10000);
+        }
+
+        // init player
+        let player;
+        // Глобальный кэш для облачных данных (избегаем повторных загрузок)
+        window.cachedCloudData = {};
+
+        function initPlayer() {
+          return window.ysdk.getPlayer({
+            scopes: false
+          }).then(_player => {
+            player = _player;
+            return player;
+          });
+        }
+
+        YaGames
+          .init()
+          .then(ysdk => {
+            console.log('Yandex: SDK initialized');
+            window.ysdk = ysdk;
+            window.gameShop = []
+            window.purchases = [];
+
+            // first interstitial ads
+            //ysdk.adv.showFullscreenAdv();
+
+            // init payments
+            ysdk.getPayments({
+              signed: true
+            }).then(_payments => {
+              console.log('[IAP] Yandex payments initialized');
+              window.payments = _payments;
+              _payments.getCatalog().then(_catalog => {
+                console.log('[IAP] Yandex catalog downloaded:', _catalog);
+                window.gameShop = _catalog;
+                _payments.getPurchases().then(purchases => {
+                  console.log('[IAP] Yandex player purchases loaded:', purchases);
+                  window.purchases = purchases;
+                  window.isPurchasesInitialized = true;
+                  console.log('[IAP] Yandex purchases system fully initialized');
+                }).catch(err => {
+                  console.log('[IAP] Error loading purchases:', err);
+                  window.isPurchasesInitialized = true; // Still mark as initialized
+                });
+              }).catch(err => {
+                console.log('[IAP] Error loading catalog:', err);
+              });
+            }).catch(err => {
+              console.log('[IAP] Yandex payments initialization failed:', err);
+            });
+          });
+      </script>
+    </body>
+  </main>
+</body>
+
+</html>
